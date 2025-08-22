@@ -4,6 +4,10 @@ import webbrowser
 import os
 import json
 import time
+import pywhatkit
+import datetime
+import smtplib
+from email.message import EmailMessage
 
 def speak(text):
     print(f"Jarvis: {text}")
@@ -67,6 +71,31 @@ def abrir_app(nome):
         speak(f"Não conheço o app {nome}. Você pode me ensinar.")
 
 # === FUNÇÕES EXISTENTES ===
+def enviar_whatsapp(numero, mensagem, hora=None, minuto=None):
+    agora = datetime.datetime.now()
+    if hora in None:
+        hora = agora.hour
+    if minuto in None:
+        minuto = agora.minute + 1 # Enviar mesnagem um minuto depois (para dar tempo de abrir o whatsapp)
+        pywhatkit.sendwhatmsg(numero, mensagem, hora, minuto)
+        speak(f"Mensagem enviada para {numero}")
+
+def enviar_email(destinatario, assunto, mensagem):
+    EMAIL = "miguelmoural826@gmail.com"
+    SENHA = "1214161820ml"
+    
+    email_msg = EmailMessage()
+    email_msg['From'] = EMAIL
+    email_msg['To'] = destinatario
+    email_msg['Subject'] = assunto
+    email_msg.set_content(mensagem)
+    
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(EMAIL, SENHA)
+        smtp.send_message(email_msg)
+        
+    speak(f"E-mail enviado para {destinatario}")
+
 def pesquisar(termo):
     url = f"https://www.google.com/search?q={termo}"
     webbrowser.open(url)
@@ -93,11 +122,27 @@ def main():
             if "sair" in comando or "desligar" in comando:
                 speak("Até logo, Desenvolvedor!")
                 break
-
+                
             elif "pesquise por" in comando:
                 termo = comando.replace("pesquise por", "").strip()
                 pesquisar(termo)
+                
+            elif "enviar mensagem" in comando:
+                speak("Qual é o numero do contato?")
+                numero = listen()
+                speak("Qual é a mensagem?")
+                mensagem = listen()
+                enviar_whatsapp(numero, mensagem)
 
+            elif "enviar email" in comando:
+                speak("Para quem devo enviar?")
+                destinatario = listen()
+                speak("Qual o assunto?")
+                assunto = listen()
+                speak("Qual é a mensagem?")
+                mensagem = listen()
+                enviar_email(destinatario, assunto, mensagem)
+            
             elif "tocar" in comando or "toque" in comando:
                 termo = comando.replace("toque", "").replace("tocar", "").strip()
                 tocar_musica(termo)
