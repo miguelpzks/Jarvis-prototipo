@@ -3,6 +3,7 @@ import pyttsx3
 import webbrowser
 import os
 import json
+import time
 
 def speak(text):
     print(f"Jarvis: {text}")
@@ -14,10 +15,13 @@ def speak(text):
     engine.runAndWait()
     engine.stop()  # evita travar o áudio
 
+# === PALAVRA DE ATIVAÇÃO ===
+WAKE_WORD = "jarvis"
+
 def listen():
+    """Escuta e retorna o que foi dito em texto"""
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("🎤 Ouvindo...")
         r.adjust_for_ambient_noise(source, duration=0.5)
         audio = r.listen(source)
     try:
@@ -27,7 +31,7 @@ def listen():
     except:
         return ""
 
-# === NOVO: SISTEMA DE APPS DINÂMICOS ===
+# === SISTEMA DE APPS DINÂMICOS ===
 APPS_FILE = "apps.json"
 
 def carregar_apps():
@@ -42,7 +46,6 @@ def salvar_apps(apps):
 
 apps = carregar_apps()
 
-# --- alguns exemplos iniciais ---
 if not apps:
     apps = {
         "calculadora": "calc.exe",
@@ -63,7 +66,7 @@ def abrir_app(nome):
     else:
         speak(f"Não conheço o app {nome}. Você pode me ensinar.")
 
-# === FUNÇÕES JÁ EXISTENTES ===
+# === FUNÇÕES EXISTENTES ===
 def pesquisar(termo):
     url = f"https://www.google.com/search?q={termo}"
     webbrowser.open(url)
@@ -74,44 +77,52 @@ def tocar_musica(termo):
     webbrowser.open(url)
     speak(f"Tocando {termo} no YouTube")
 
-# === LOOP PRINCIPAL ===
+# === LOOP PRINCIPAL COM ATIVAÇÃO POR VOZ ===
 def main():
-    speak("Olá, eu sou o Jarvis. Como posso ajudar?")
+    speak("Jarvis ativado. Diga meu nome para me chamar.")
     while True:
+        print("Aguardando palavra de ativação...")
         comando = listen()
 
-        if "sair" in comando or "desligar" in comando:
-            speak("Até logo, Desenvolvedor!")
-            break
+        if WAKE_WORD in comando:
+            speak("Estou ouvindo. O que deseja?")
+            
+            # agora escuta o comando real
+            comando = listen()
 
-        elif "pesquise por" in comando:
-            termo = comando.replace("pesquise por", "").strip()
-            pesquisar(termo)
+            if "sair" in comando or "desligar" in comando:
+                speak("Até logo, Desenvolvedor!")
+                break
 
-        elif "tocar" in comando:
-            termo = comando.replace("toque", "").strip()
-            tocar_musica(termo)
+            elif "pesquise por" in comando:
+                termo = comando.replace("pesquise por", "").strip()
+                pesquisar(termo)
 
-        # --- NOVO: abrir app ---
-        elif "abrir" in comando or "abra" in comando:
-            nome = comando.replace("abrir", "").strip()
-            abrir_app(nome)
+            elif "tocar" in comando or "toque" in comando:
+                termo = comando.replace("toque", "").replace("tocar", "").strip()
+                tocar_musica(termo)
 
-        # --- NOVO: ensinar app ---
-        elif "memorize que" in comando and "abre em" in comando:
-            try:
-                partes = comando.replace("memorize que", "").strip().split("abre em")
-                nome = partes[0].strip()
-                caminho = partes[1].strip()
-                apps[nome] = caminho
-                salvar_apps(apps)
-                speak(f"Ok, memorize que {nome} abre em {caminho}")
-            except:
-                speak("Não entendi o comando de memorização.")
+            elif "abrir" in comando or "abra" in comando:
+                nome = comando.replace("abrir", "").replace("abra", "").strip()
+                abrir_app(nome)
 
-        else:
-            if comando != "":
-                speak("Desculpe, ainda não sei como responder a isso.")
+            elif "memorize que" in comando and "abre em" in comando:
+                try:
+                    partes = comando.replace("memorize que", "").strip().split("abre em")
+                    nome = partes[0].strip()
+                    caminho = partes[1].strip()
+                    apps[nome] = caminho
+                    salvar_apps(apps)
+                    speak(f"Ok, memorize que {nome} abre em {caminho}")
+                except:
+                    speak("Não entendi o comando de memorização.")
+
+            else:
+                if comando != "":
+                    speak("Desculpe, ainda não sei como responder a isso.")
+        
+        # opcional: evitar loop muito rápido
+        time.sleep(0.5)
 
 if __name__ == "__main__":
     main()
